@@ -5,14 +5,15 @@ import pandas as pd
 import mops_emission as em
 em.init_emission('fuel_and_emission_table.csv')
 
+
 advisoryThreshold = 60
 
 ### This is the file name that you want to read in 
-fileName = 'KCLT.flightSummary.v0.3.20171220.09.00-20171221.08.59.20171221.15.15.04.csv'
+fileName = 'KCLT.flightSummary.v0.3.20171215.09.00-20171216.09.00.20171221.03.34.41.csv'
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
 
 ### this will point you to the correct directory that you want to load the file from
-inputFileWithDirectory = 'opsSummaryDirectory/originalSummary/' + fileName
+inputFileWithDirectory = 'opsSummaryDirectoy/originalSummary/' + fileName
 
 ### This is the output file name to save
 outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched' + fileName
@@ -23,7 +24,7 @@ dfSummary = pd.read_csv(inputFileWithDirectory, sep=',',index_col=False)
 
 
 ### define a function to get the actual off EPOCH
-def fGetOffEPOCH(conn,gufi,matm_flight_off):
+def fGetOffEPOCH(conn,gufi,acid,matm_flight_off):
 
 	q = '''SELECT
 	extract( EPOCH from departure_runway_actual_time) as actualoff,
@@ -33,12 +34,26 @@ def fGetOffEPOCH(conn,gufi,matm_flight_off):
 	WHERE
 	gufi = '%s'
 	''' %(gufi)
-
 	df = psql.read_sql(q, conn)
-	if len(df['actualoff']) > 0:
+
+	if df['actualoff'][0] > 0:
 		return [df['actualoff'][0],df['actualout'][0]]
 	else:
-		return [False,False]
+		q2 = '''SELECT
+		extract( EPOCH from departure_runway_actual_time) as actualoff,
+		extract( EPOCH from departure_stand_actual_time) as actualout
+		FROM
+		matm_flight_summary
+		WHERE
+		acid = '%s'
+		and departure_runway_actual_time > TIMESTAMP '%s' AT TIME ZONE 'UTC' - INTERVAL '3 MINUTES'
+		and departure_runway_actual_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' + INTERVAL '3 MINUTES'
+		''' %(acid,matm_flight_off,matm_flight_off)
+		df2 = psql.read_sql(q2, conn)
+		if (len(df2['actualoff']) > 0) and (df2['actualoff'][0] > 0):
+			return [df2['actualoff'][0],df2['actualout'][0]]
+		else:
+			return [False,False]
 
 def fGetReadyIndex(df):
 	getReadyIndex = True
@@ -374,10 +389,13 @@ for flight in range(len(dfSummary['gufi'])):
 				# dfGate.to_csv(stSave)
 
 				### get epoch from actual take off time 
-				[off_epoch,out_epoch] = fGetOffEPOCH(conn,dfSummary['gufi'][flight],actualOffTime)
+				[off_epoch,out_epoch] = fGetOffEPOCH(conn,dfSummary['gufi'][flight],dfSummary['acid'][flight],actualOffTime)
 				
-				realizedTaxiTime = (off_epoch - out_epoch) / float(60)
-				dfSummary['Total_Taxi_Time'][flight] = realizedTaxiTime
+				if (off_epoch and out_epoch) != False:
+					print(off_epoch)
+					print(out_epoch)
+					realizedTaxiTime = (off_epoch - out_epoch) / float(60)
+					dfSummary['Total_Taxi_Time'][flight] = realizedTaxiTime
 
 				dfSummary['Tactical_Aircraft_Type'][flight] = df['ac_type'][0]
 				dfSummary['Tactical_Weight_Class'][flight] = df['weight_class'][0]
@@ -424,7 +442,8 @@ for flight in range(len(dfSummary['gufi'])):
 						if df['timenow'][readyIndex-1] == dfGate['timenow'][readyIndex-1]:
 							modelTaxiTime = (df['runwayutot'][readyIndex-1] - dfGate['gateuobt'][readyIndex-1]) / float(60)
 							dfSummary['Unimpeded_Taxi_Time'][flight] = modelTaxiTime
-							dfSummary['Excess_Taxi_Time'][flight] = realizedTaxiTime - modelTaxiTime
+							if (off_epoch and out_epoch) != False:
+								dfSummary['Excess_Taxi_Time'][flight] = realizedTaxiTime - modelTaxiTime
 				except:
 					pass
 
@@ -473,7 +492,8 @@ for flight in range(len(dfSummary['gufi'])):
 							meterTransitionIn[mss] = str(df['metering_display'][ts-1])
 							meterModeTransitionIn[mss] = str(df['metering_mode'][ts-1])
 							runwayTransitionIn[mss] = str(df['runway'][ts])
-							accuracyTransitionIn[mss] = df['runwayttot'][ts] - off_epoch
+							if (off_epoch and out_epoch) != False:
+								accuracyTransitionIn[mss] = df['runwayttot'][ts] - off_epoch
 							writeInFlag[mss] = 1
 
 							### if the mss is pushback planned then store data related to 
@@ -491,7 +511,7 @@ for flight in range(len(dfSummary['gufi'])):
 							if modelVector[mss] in ['PUSHBACK_READY']:	
 								try:
 									if dfGate['eta_msg_time'][ts] == df['eta_msg_time'][ts]:
-										
+
 										[ttotTransitionIn,utotTransitionIn,readyTime,preReadyUOBT,advisory,gateHold] = fGetHoldData(dfSummary,mss,df,dfGate,readyIndex,ttotTransitionIn,utotTransitionIn)
 										
 										#### True / False return to gate after put on hold
@@ -558,7 +578,8 @@ for flight in range(len(dfSummary['gufi'])):
 							meterTransitionOut[mss2] = str(df['metering_display'][ts-1])
 							meterModeTransitionOut[mss2] = str(df['metering_mode'][ts-1])
 							runwayTransitionOut[mss2] = str(df['runway'][ts-1])
-							accuracyTransitionOut[mss2] = df['runwayttot'][ts-1] - off_epoch
+							if (off_epoch and out_epoch) != False:
+								accuracyTransitionOut[mss2] = df['runwayttot'][ts-1] - off_epoch
 							
 							if modelVector[mss2] in ['PUSHBACK_UNCERTAIN' , 'PUSHBACK_PLANNED']:
 								writeOutFlag[mss2] = 1
