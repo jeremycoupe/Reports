@@ -7,8 +7,6 @@ em.init_emission('fuel_and_emission_table.csv')
 
 advisoryThreshold = 60
 
-#### This is a test 2
-
 ### This is the file name that you want to read in 
 fileName = 'KCLT.flightSummary.v0.3.20171220.09.00-20171221.08.59.20171221.15.15.04.csv'
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
@@ -493,13 +491,7 @@ for flight in range(len(dfSummary['gufi'])):
 							if modelVector[mss] in ['PUSHBACK_READY']:	
 								try:
 									if dfGate['eta_msg_time'][ts] == df['eta_msg_time'][ts]:
-										# ttotTransitionIn[mss] = str(df['scheduled_time'][ts-1])
-										# utotTransitionIn[mss] = str(df['estimated_time'][ts-1])
-										# readyTime = dfGate['timenow'][ts]
-										# preReadyUOBT = dfGate['gateuobt'][ts-1]
-										# advisory = dfGate['gatetobt'][ts] - dfGate['timenow'][ts]
-										# #gateHold = dfGate['gatetobt'][ts] - dfGate['gateuobt'][ts-1]
-										# gateHold = dfGate['gatetobt'][ts] - preReadyUOBT
+										
 										[ttotTransitionIn,utotTransitionIn,readyTime,preReadyUOBT,advisory,gateHold] = fGetHoldData(dfSummary,mss,df,dfGate,readyIndex,ttotTransitionIn,utotTransitionIn)
 										
 										#### True / False return to gate after put on hold
@@ -638,36 +630,6 @@ for flight in range(len(dfSummary['gufi'])):
 
 	
 				dfSummary = fWriteReady(dfSummary,df,dfGate,readyIndex,off_epoch)
-
-				# if readyIndex != -1:
-				# 	try:
-				# 		if dfGate['eta_msg_time'][readyIndex] == df['eta_msg_time'][readyIndex]:
-				# 			advisoryReady = dfGate['gatetobt'][readyIndex] - dfGate['timenow'][readyIndex+1]
-				# 			gateHoldReady = dfGate['gatetobt'][readyIndex] - dfGate['gateuobt'][readyIndex]
-				# 	except:
-				# 		advisoryReady = 'NA'
-				# 		gateHoldReady = 'NA'
-
-
-				# 	dfSummary['TTOT_At_Ready'][flight] = str(df['scheduled_time'][readyIndex])
-				# 	dfSummary['UTOT_At_Ready'][flight] = str(df['estimated_time'][readyIndex])
-				# 	dfSummary['Total_Gate_Hold_At_Ready'][flight] = advisoryReady
-				# 	dfSummary['Passback_Gate_Hold_At_Ready'][flight] = gateHoldReady
-				# 	dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = df['runwayttot'][readyIndex] - off_epoch
-				# 	dfSummary['Runway_Assigned_At_'][flight] = str(df['runway'][readyIndex])
-				# 	dfSummary['Runway(s)_Being_Metered_At_Ready'][flight] = str(df['metering_display'][readyIndex])
-				# 	dfSummary['Metering_Mode_At_Ready'][flight] = str(df['metering_mode'][readyIndex])
-				# 	dfSummary['Timestamp_At_Ready'][flight] = str(df['eta_msg_time'][readyIndex+1])
-				# else:
-				# 	dfSummary['TTOT_At_Ready'][flight] = 'NA'
-				# 	dfSummary['UTOT_At_Ready'][flight] = 'NA'
-				# 	dfSummary['Total_Gate_Hold_At_Ready'][flight] = 'NA'
-				# 	dfSummary['Passback_Gate_Hold_At_Ready'][flight] = 'NA'
-				# 	dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = 'NA'
-				# 	dfSummary['Runway_Assigned_At_'][flight] = 'NA'
-				# 	dfSummary['Runway(s)_Being_Metered_At_Ready'][flight] = 'NA'
-				# 	dfSummary['Metering_Mode_At_Ready'][flight] = 'NA'
-				# 	dfSummary['Timestamp_At_Ready'][flight] = 'NA'
 
 
 
