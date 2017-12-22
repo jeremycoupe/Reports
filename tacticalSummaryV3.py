@@ -9,14 +9,14 @@ em.init_emission('fuel_and_emission_table.csv')
 advisoryThreshold = 60
 
 ### This is the file name that you want to read in 
-fileName = 'KCLT.flightSummary.v0.3.20171215.09.00-20171216.09.00.20171221.03.34.41.csv'
+fileName = 'KCLT.flightSummary.v0.3.20171218.09.00-20171219.09.00.20171221.03.52.12.csv'
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
 
 ### this will point you to the correct directory that you want to load the file from
 inputFileWithDirectory = 'opsSummaryDirectoy/originalSummary/' + fileName
 
 ### This is the output file name to save
-outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched' + fileName
+outputFileWithDirectory = 'opsSummaryDirectoy/tacticalStitched/' + fileName
 
 #### Read summary table to get data about flights that you want to 
 #### stitch tactical data too
@@ -309,8 +309,8 @@ dfSummary['Excess_Taxi_Time'] = ""
 #### Enter loop: for every flight you will query the database
 #### and get data from the tactical scheduler
 
-for flight in range(len(dfSummary['gufi'])):
-#for flight in range(520,540):#range(len(dfSummary['gufi'])):
+#for flight in range(len(dfSummary['gufi'])):
+for flight in range(243,248):#range(len(dfSummary['gufi'])):
 #for flight in range(796,806):#range(len(dfSummary['gufi'])):
 
 	if str(dfSummary['isDeparture'][flight]) == str('True'):
