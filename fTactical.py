@@ -309,8 +309,8 @@ def fTactical(fileName):
 	#### Enter loop: for every flight you will query the database
 	#### and get data from the tactical scheduler
 
-	#for flight in range(len(dfSummary['gufi'])):
-	for flight in range(243,248):#range(len(dfSummary['gufi'])):
+	for flight in range(len(dfSummary['gufi'])):
+	#for flight in range(243,248):#range(len(dfSummary['gufi'])):
 	#for flight in range(796,806):#range(len(dfSummary['gufi'])):
 
 		if str(dfSummary['isDeparture'][flight]) == str('True'):
