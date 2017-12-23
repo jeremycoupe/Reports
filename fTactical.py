@@ -16,7 +16,7 @@ def fTactical(fileName):
 	inputFileWithDirectory = 'opsSummaryDirectoy/originalSummary/' + fileName
 
 	### This is the output file name to save
-	outputFileWithDirectory = 'opsSummaryDirectoy/tacticalStitched/' + fileName
+	outputFileWithDirectory = 'opsSummaryDirectoy/tacticalStitched/tactical_' + fileName
 
 	#### Read summary table to get data about flights that you want to 
 	#### stitch tactical data too
@@ -392,8 +392,8 @@ def fTactical(fileName):
 					[off_epoch,out_epoch] = fGetOffEPOCH(conn,dfSummary['gufi'][flight],dfSummary['acid'][flight],actualOffTime)
 					
 					if (off_epoch and out_epoch) != False:
-						print(off_epoch)
-						print(out_epoch)
+						# print(off_epoch)
+						# print(out_epoch)
 						realizedTaxiTime = (off_epoch - out_epoch) / float(60)
 						dfSummary['Total_Taxi_Time'][flight] = realizedTaxiTime
 
@@ -542,7 +542,7 @@ def fTactical(fileName):
 												dfSummary['Held_While_Metering_On_Scheduled_Runway'][flight] = 'FALSE'
 
 									except:
-										print('YOU FAILED ON THE TRY')
+										print('YOU FAILED ON THE TRY ' + dfSummary['gufi'][flight] + ' ' + str(ts))
 
 
 									
