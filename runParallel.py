@@ -2,7 +2,7 @@ import threading
 import os
 from fTactical import *
 
-files = os.listdir('opsSummaryDirectoy/originalSummary')
+files = os.listdir('opsSummaryDirectory/originalSummary')
 
 threads = []
 
