@@ -12,17 +12,17 @@ def computeMeteringStats(fileName,gateHoldAllDays):
 	inputFile = 'opsSummaryDirectory/tacticalStitched/' + fileName
 	date = inputFile.split('.')[4]
 	dateStr = date[0:4] + '-' + date[4:6] + '-' + date[6:8]
-	outputFile = 'opsSummaryDirectory/summaryStats/' + 'SummaryMeteringStats.' + str(dateStr) + '.csv'
+	outputFile = 'opsSummaryDirectory/summaryStats/' + 'SummaryMeteringStats.' + fileName.split('.')[2] + '.' + str(dateStr) + '.csv'
 
 	### Read the summary data frame 
 	dfSummary = pd.read_csv(inputFile, sep=',',index_col=False)
 
 	### define column names for the dfStats data frame
 	cols = ['Date', 'Number Aircraft Subject to Surface Metering','Number Aircraft Held For Surface Metering', 'Sum of Total Realized Hold (Minutes)', \
-	'Average Realized Hold if Held for Surface Metering (Minutes)', 'Total fuel saved (kg)', 'Total CO saved (g)', 'Total CO2 saved (kg)' , 'Total HC saved (g)', \
-	'Total NOx saved (g)', 'Mean Advisory When Put on Hold (Minutes)', 'Median Advisory When Put on Hold (Minutes)', \
-	'Max Advisory When Put on Hold (Minutes)', 'Mean Pass Back Delay When Put on Hold (Minutes)', \
-	'Median Pass Back Delay When Put on Hold (Minutes)', 'Max Pass Back Delay When Put on Hold (Minutes)']
+	'Average Realized Hold if Held for Surface Metering (Minutes)', 'Average Taxi Time if Held For Surface Metering' , 'Average Excess Taxi Time if Held For Surface Metering' , \
+	 'Total fuel saved (kg)', 'Total CO saved (g)','Total CO2 saved (kg)' , 'Total HC saved (g)', 'Total NOx saved (g)', 'Mean Advisory When Put on Hold (Minutes)', \
+	  'Median Advisory When Put on Hold (Minutes)', 'Max Advisory When Put on Hold (Minutes)', 'Mean Pass Back Delay When Put on Hold (Minutes)', \
+	   'Median Pass Back Delay When Put on Hold (Minutes)', 'Max Pass Back Delay When Put on Hold (Minutes)']
 
 	### define DFStats data frame
 	dfStats = pd.DataFrame(np.empty((1,len(cols)), dtype=object),columns=cols)
@@ -42,8 +42,10 @@ def computeMeteringStats(fileName,gateHoldAllDays):
 	noxSavedGrams = []
 	passBackHoldVec_Ready = []
 	gateAdvisory_Ready = []
+	gateHoldTotalTaxiTime = []
 	gateHoldExcessTaxiTime = []
 	subjectExcessTaxiTime = []
+	
 
 	flight_key = []
 	plt.figure()
@@ -136,7 +138,12 @@ def computeMeteringStats(fileName,gateHoldAllDays):
 							passBackHoldVec_Ready.append(dfSummary['Passback_Hold_When_Put_On_Hold'][flight])
 
 							if dfSummary['Track_Hit_Out_Time'][flight] == False:
-								gateHoldExcessTaxiTime.append(dfSummary['Excess_Taxi_Time'][flight])
+								if str(dfSummary['Excess_Taxi_Time'][flight]) != 'nan':
+									gateHoldExcessTaxiTime.append(dfSummary['Excess_Taxi_Time'][flight])
+									gateHoldAllDays.append(dfSummary['Excess_Taxi_Time'][flight])
+
+								if str(dfSummary['Total_Taxi_Time'][flight]) != 'nan':
+									gateHoldTotalTaxiTime.append(dfSummary['Total_Taxi_Time'][flight])
 
 
 
@@ -144,42 +151,49 @@ def computeMeteringStats(fileName,gateHoldAllDays):
 	totalHoldMinutes = sum(totalRealizedHold) / float(60)
 
 	### compute average hold in minutes
-	averageHold = totalHoldMinutes / float(countTotalHeldForMetering)
+	# averageHold = totalHoldMinutes / float(countTotalHeldForMetering)
+	averageHold = np.mean(totalHoldMinutes) 
 
 
 	### fill data in the dfStats data frame
 	dfStats['Date'][0] = dateStr
 	dfStats['Number Aircraft Subject to Surface Metering'][0] = countTotalSubjectSurfaceMetering
 	dfStats['Number Aircraft Held For Surface Metering'][0] = countTotalHeldForMetering
-	dfStats['Sum of Total Realized Hold (Minutes)'][0] = totalHoldMinutes
-	dfStats['Average Realized Hold if Held for Surface Metering (Minutes)'][0] = totalHoldMinutes / float(countTotalHeldForMetering)
-	dfStats['Total fuel saved (kg)'][0] = sum(fuelSavedKG)
-	dfStats['Total CO saved (g)'][0] = sum(coSavedGrams)
-	dfStats['Total CO2 saved (kg)'][0] = sum(co2SavedKG)
-	dfStats['Total HC saved (g)'][0] = sum(hcSavedGrams)
-	dfStats['Total NOx saved (g)'][0] = sum(noxSavedGrams)
-	dfStats['Mean Advisory When Put on Hold (Minutes)'][0] = np.mean(gateAdvisory_Ready)/float(60)
-	dfStats['Median Advisory When Put on Hold (Minutes)'] = np.median(gateAdvisory_Ready)/float(60)
-	dfStats['Max Advisory When Put on Hold (Minutes)'][0] = max(gateAdvisory_Ready)/float(60)
-	dfStats['Mean Pass Back Delay When Put on Hold (Minutes)'][0] = np.mean(passBackHoldVec_Ready)/float(60)
-	dfStats['Median Pass Back Delay When Put on Hold (Minutes)'][0] = np.median(passBackHoldVec_Ready)/float(60)
-	dfStats['Max Pass Back Delay When Put on Hold (Minutes)'][0] = max(passBackHoldVec_Ready)/float(60)
+	if countTotalHeldForMetering > 0:
+		dfStats['Sum of Total Realized Hold (Minutes)'][0] = totalHoldMinutes
+		dfStats['Average Realized Hold if Held for Surface Metering (Minutes)'][0] = totalHoldMinutes / float(countTotalHeldForMetering)
+		dfStats['Total fuel saved (kg)'][0] = sum(fuelSavedKG)
+		dfStats['Total CO saved (g)'][0] = sum(coSavedGrams)
+		dfStats['Total CO2 saved (kg)'][0] = sum(co2SavedKG)
+		dfStats['Total HC saved (g)'][0] = sum(hcSavedGrams)
+		dfStats['Total NOx saved (g)'][0] = sum(noxSavedGrams)
+		dfStats['Mean Advisory When Put on Hold (Minutes)'][0] = np.mean(gateAdvisory_Ready)/float(60)
+		dfStats['Median Advisory When Put on Hold (Minutes)'] = np.median(gateAdvisory_Ready)/float(60)
+		dfStats['Max Advisory When Put on Hold (Minutes)'][0] = max(gateAdvisory_Ready)/float(60)
+		dfStats['Mean Pass Back Delay When Put on Hold (Minutes)'][0] = np.mean(passBackHoldVec_Ready)/float(60)
+		dfStats['Median Pass Back Delay When Put on Hold (Minutes)'][0] = np.median(passBackHoldVec_Ready)/float(60)
+		dfStats['Max Pass Back Delay When Put on Hold (Minutes)'][0] = max(passBackHoldVec_Ready)/float(60)
+		dfStats['Average Taxi Time if Held For Surface Metering'][0] = np.mean(gateHoldTotalTaxiTime) 
+		dfStats['Average Excess Taxi Time if Held For Surface Metering'][0] = np.mean(gateHoldExcessTaxiTime) 
 
 	### write the output to csv file
+	
+
+		a = np.sort(np.array(flight_key))
+		print(a)
+		print(len(a))
+		print(countTotalSubjectSurfaceMetering)
+
+		try:
+			plt.hist(gateHoldExcessTaxiTime,bins=30,alpha=0.7,label='Gate Hold Excess Taxi Time')
+			plt.title( dateStr + ' Excess Taxi Time [Minutes]')
+			#plt.hist(gateHoldExcessTaxiTime,bins=30,color = 'green',alpha=0.7,label='Subject To Excess Taxi Time')
+			plt.savefig('opsSummaryDirectory/summaryStats/figs/ExcessTaxiTime' + str(dateStr) + '.png')
+			#plt.show()
+		except:
+			pass
+
 	dfStats.to_csv(outputFile,index = False)
-
-	a = np.sort(np.array(flight_key))
-	print(a)
-	print(len(a))
-	print(countTotalSubjectSurfaceMetering)
-
-	plt.hist(gateHoldExcessTaxiTime,bins=30,alpha=0.7,label='Gate Hold Excess Taxi Time')
-	plt.title( dateStr + ' Excess Taxi Time [Minutes]')
-	#plt.hist(gateHoldExcessTaxiTime,bins=30,color = 'green',alpha=0.7,label='Subject To Excess Taxi Time')
-	plt.savefig('opsSummaryDirectory/summaryStats/ExcessTaxiTime' + str(dateStr) + '.png')
-	#plt.show()
-
-	gateHoldAllDays.append(gateHoldExcessTaxiTime)
 	return gateHoldAllDays
 
 
