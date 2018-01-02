@@ -542,7 +542,7 @@ for flight in range(243,248):#range(len(dfSummary['gufi'])):
 											dfSummary['Held_While_Metering_On_Scheduled_Runway'][flight] = 'FALSE'
 
 								except:
-									print('YOU FAILED ON THE TRY')
+									pass
 
 
 								
