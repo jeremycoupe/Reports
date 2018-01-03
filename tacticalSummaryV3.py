@@ -13,10 +13,10 @@ fileName = 'KCLT.flightSummary.v0.3.20171218.09.00-20171219.09.00.20171221.03.52
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
 
 ### this will point you to the correct directory that you want to load the file from
-inputFileWithDirectory = 'opsSummaryDirectoy/originalSummary/' + fileName
+inputFileWithDirectory = 'opsSummaryDirectory/originalSummary/' + fileName
 
 ### This is the output file name to save
-outputFileWithDirectory = 'opsSummaryDirectoy/tacticalStitched/' + fileName
+outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/' + fileName
 
 #### Read summary table to get data about flights that you want to 
 #### stitch tactical data too
