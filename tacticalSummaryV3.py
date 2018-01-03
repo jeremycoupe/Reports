@@ -532,9 +532,9 @@ for flight in range(243,248):#range(len(dfSummary['gufi'])):
 										else:
 											dfSummary['Held_With_Non_Zero_(TOBT-UOBT)'][flight] = 'FALSE'
 
-										if df['metering_mode'][ts] == 'TIME_BASED_METERING':
-											runwayMeterVec = df['metering_display'][ts].split(',')
-											if str(df['runway'][ts]) in runwayMeterVec:
+										if df['metering_mode'][ts-1] == 'TIME_BASED_METERING':
+											runwayMeterVec = df['metering_display'][ts-1].split(',')
+											if str(df['runway'][ts-1]) in runwayMeterVec:
 												dfSummary['Held_While_Metering_On_Scheduled_Runway'][flight] = 'TRUE'
 											else:
 												dfSummary['Held_While_Metering_On_Scheduled_Runway'][flight] = 'FALSE'
