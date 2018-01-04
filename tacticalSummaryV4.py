@@ -6,7 +6,7 @@ import mops_emission as em
 em.init_emission('fuel_and_emission_table.csv')
 
 
-advisoryThreshold = 60
+advisoryThreshold = 15
 
 ### This is the file name that you want to read in 
 fileName = 'KCLT.flightSummary.v0.3.20171222.09.00-20171223.08.59.20171223.15.15.04.csv'
@@ -16,7 +16,7 @@ fileName = 'KCLT.flightSummary.v0.3.20171222.09.00-20171223.08.59.20171223.15.15
 inputFileWithDirectory = 'opsSummaryDirectory/originalSummary/' + fileName
 
 ### This is the output file name to save
-outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/testNewQuery' + fileName
+outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/testV2NewQuery' + fileName
 
 #### Read summary table to get data about flights that you want to 
 #### stitch tactical data too
@@ -29,6 +29,26 @@ print('Attempting to connect to database')
 
 ### use this connection if you are connected to Fuser Warehouse
 conn = psycopg2.connect("dbname='fuserclt' user='fuserclt' password='fuserclt' host='localhost'  ")
+print('Connected to database')
+
+
+#### Get start timestamp of all data
+st0 = fileName.split('.')[4]
+date0 = st0[0:4] + '-' + st0[4:6] + '-' + st0[6:8] + ' ' + '06:00:00'
+
+
+#### Get end timestamp of all data
+st1 = fileName.split('-')[1]
+date1 = st1[0:4] + '-' + st1[4:6] + '-' + st1[6:8] + ' ' + '11:00:00' 
+
+print('\n')
+print('Start of data collection:')
+print(date0)
+print('\n')
+print('End of data collection:')
+print(date1)
+print('\n')
+
 
 q = '''SELECT
 tf.flight_key, tf.general_stream, tfs.schedule_priority, tfs.model_schedule_state, 
@@ -48,49 +68,15 @@ INNER JOIN tactical_flight_state tfs on rt.tactical_flight_state_id = tfs.id
 INNER JOIN tactical_gate tg on ri.tactical_gate_id = tg.id
 INNER JOIN tactical_aircraft_data tad on rt.tactical_aircraft_data_id = tad.id
 WHERE
-smd.eta_msg_time > TIMESTAMP '2017-12-22 06:00:00' AT TIME ZONE 'UTC' 
-and smd.eta_msg_time < TIMESTAMP '2017-12-23 10:00:00' AT TIME ZONE 'UTC' 
+smd.eta_msg_time > TIMESTAMP '%s' AT TIME ZONE 'UTC' 
+and smd.eta_msg_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' 
 order by smd.eta_msg_time 
-''' 
-
+''' %(date0,date1)
 
 print('THE QUERY HAS STARTED')
 dfALL = psql.read_sql(q, conn)
 print('THE QUERY IS DONE')
 
-#dfALL.to_csv('dfALL_CSV.csv')
-
-# ### define a function to get the actual off EPOCH
-# def fGetOffEPOCH(conn,gufi,acid,matm_flight_off):
-
-# 	q = '''SELECT
-# 	extract( EPOCH from departure_runway_actual_time) as actualoff,
-# 	extract( EPOCH from departure_stand_actual_time) as actualout
-# 	FROM
-# 	matm_flight_summary
-# 	WHERE
-# 	gufi = '%s'
-# 	''' %(gufi)
-# 	df = psql.read_sql(q, conn)
-
-# 	if df['actualoff'][0] > 0:
-# 		return [df['actualoff'][0],df['actualout'][0]]
-# 	else:
-# 		q2 = '''SELECT
-# 		extract( EPOCH from departure_runway_actual_time) as actualoff,
-# 		extract( EPOCH from departure_stand_actual_time) as actualout
-# 		FROM
-# 		matm_flight_summary
-# 		WHERE
-# 		acid = '%s'
-# 		and departure_runway_actual_time > TIMESTAMP '%s' AT TIME ZONE 'UTC' - INTERVAL '3 MINUTES'
-# 		and departure_runway_actual_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' + INTERVAL '3 MINUTES'
-# 		''' %(acid,matm_flight_off,matm_flight_off)
-# 		df2 = psql.read_sql(q2, conn)
-# 		if (len(df2['actualoff']) > 0) and (df2['actualoff'][0] > 0):
-# 			return [df2['actualoff'][0],df2['actualout'][0]]
-# 		else:
-# 			return [False,False]
 
 def fGetReadyIndex(df):
 	getReadyIndex = True
@@ -198,16 +184,6 @@ def fWriteReady(dfSummary,df,dfGate,readyIndex,off_epoch):
 
 
 	return dfSummary
-
-#### Connect to the database on the localhost
-#### assumes you have set up tunnel using ssh -fNL 5432:clt-stbo-ops:5432 username@lz35
-# print('Attempting to connect to database')
-
-# ### use this connection if you are connected to OPS
-# #conn = psycopg2.connect("dbname='fuser' user='fuser' password='fuser' host='localhost'  ")
-
-# ### use this connection if you are connected to Fuser Warehouse
-# conn = psycopg2.connect("dbname='fuserclt' user='fuserclt' password='fuserclt' host='localhost'  ")
 
 
 #### Define model schedule states you want to get scheduler data for
@@ -361,38 +337,8 @@ for flight in range(len(dfSummary['gufi'])):
 		print(dfSummary['gufi'][flight])
 
 		if str(actualOffTime) != 'nan':
-			### Query the tactical tables for the relevant RUNWAY data
-			# q = '''SELECT
-			# tf.flight_key, tf.general_stream, tfs.schedule_priority, tfs.model_schedule_state, 
-			# trun.runway, tg.gate, smd.eta_msg_time, rt.scheduled_time, rt.estimated_time,
-			# extract(EPOCH from rt.scheduled_time) as sta,
-			# extract(EPOCH from rt.estimated_time) as eta,
-			# extract(EPOCH from smd.eta_msg_time) as timenow,
-			# smd.metering_display, smd.metering_mode, tad.ac_type, tad.weight_class
-			# FROM
-			# tactical_route_times rt
-			# INNER JOIN tactical_flight tf ON rt.tactical_flight_id = tf.id
-			# INNER JOIN tactical_fix tfix ON rt.tactical_fix_schedule_id = tfix.id
-			# INNER JOIN tactical_route_info ri ON rt.tactical_route_info_id = ri.id
-			# INNER JOIN tactical_runway trun ON ri.tactical_runway_id = trun.id
-			# INNER JOIN tactical_schedule_meta_data smd ON rt.tactical_schedule_meta_data_id = smd.id
-			# INNER JOIN tactical_flight_state tfs on rt.tactical_flight_state_id = tfs.id
-			# INNER JOIN tactical_gate tg on ri.tactical_gate_id = tg.id
-			# INNER JOIN tactical_aircraft_data tad on rt.tactical_aircraft_data_id = tad.id
-			# WHERE
-			# smd.eta_msg_time > TIMESTAMP '%s' AT TIME ZONE 'UTC' - INTERVAL '180 MINUTES'
-			# and smd.eta_msg_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' + INTERVAL '15 MINUTES'
-			# and tf.flight_key = '%s'
-			# and tfix.fix = trun.runway
-			# order by smd.eta_msg_time 
-			# ''' % (actualOffTime,actualOffTime,dfSummary['gufi'][flight])
-
-			# df = psql.read_sql(q, conn)
-			#### save stuff for debug purposes if needed
-			# print(df)
-			# stSave = 'confirmData/debugRunwayData' + str(flight) + '.csv'
-			# df.to_csv(stSave)
-
+			
+			#### Query the data frame of all the data to get runway data for flight
 			df0 = dfALL[ (dfALL['flight_key'] == dfSummary['gufi'][flight]) \
 			& (dfALL['fix'] == dfALL['runway'])  ]
 
@@ -400,61 +346,24 @@ for flight in range(len(dfSummary['gufi'])):
 
 			### add hook incase you cant find flight
 			if len(df['flight_key']) > 0:
-				### Query the tactical tables for the relevant GATE data
-				# qGate = '''SELECT
-				# tf.flight_key, tf.general_stream, tfs.schedule_priority, tfs.model_schedule_state, 
-				# trun.runway, tg.gate, smd.eta_msg_time, rt.scheduled_time, rt.estimated_time, tfix.fix,
-				# extract(EPOCH from rt.scheduled_time) as sta,
-				# extract(EPOCH from rt.estimated_time) as eta,
-				# extract(EPOCH from smd.eta_msg_time) as timenow,
-				# smd.metering_display, smd.metering_mode
-				# FROM
-				# tactical_route_times rt
-				# INNER JOIN tactical_flight tf ON rt.tactical_flight_id = tf.id
-				# INNER JOIN tactical_fix tfix ON rt.tactical_fix_schedule_id = tfix.id
-				# INNER JOIN tactical_route_info ri ON rt.tactical_route_info_id = ri.id
-				# INNER JOIN tactical_runway trun ON ri.tactical_runway_id = trun.id
-				# INNER JOIN tactical_schedule_meta_data smd ON rt.tactical_schedule_meta_data_id = smd.id
-				# INNER JOIN tactical_flight_state tfs on rt.tactical_flight_state_id = tfs.id
-				# INNER JOIN tactical_gate tg on ri.tactical_gate_id = tg.id
-				# WHERE
-				# smd.eta_msg_time > TIMESTAMP '%s' AT TIME ZONE 'UTC' - INTERVAL '180 MINUTES'
-				# and smd.eta_msg_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' + INTERVAL '15 MINUTES'
-				# and tf.flight_key = '%s'
-				# and tfix.fix = tg.gate
-				# order by smd.eta_msg_time 
-				# ''' % (actualOffTime,actualOffTime,dfSummary['gufi'][flight])
-
+				
+				### Query the data frame of all the data to get gate data for flight
 				dfGate0 = dfALL[ (dfALL['flight_key'] == dfSummary['gufi'][flight]) \
 				& (dfALL['fix'] == dfALL['gate'])  ]
 
 				dfGate = dfGate0.reset_index(drop=True)
 
-				# dfGate = psql.read_sql(qGate, conn)
+				
 				#### save stuff for debug purposes if needed
 				# print(dfGate)
 				# stSave = 'confirmData/debugGateData' + str(flight) + '.csv'
 				# dfGate.to_csv(stSave)
 
-				### get epoch from actual take off time 
-				#[off_epoch,out_epoch] = fGetOffEPOCH(conn,dfSummary['gufi'][flight],dfSummary['acid'][flight],actualOffTime)
-				
-				offTimeStamp = pd.Timestamp(dfSummary['departure_runway_actual_time'][flight])
-				outTimeStamp = pd.Timestamp(dfSummary['departure_stand_actual_time'][flight])
-
-				#if (off_epoch and out_epoch) != False:
-				print(offTimeStamp)
-				print(outTimeStamp)
-				rTaxiTime = offTimeStamp - outTimeStamp
-				realizedTaxiTime = rTaxiTime.total_seconds() / float(60)
-				dfSummary['Total_Taxi_Time'][flight] = realizedTaxiTime
-
+				### save aircraft type and weight class info to summary data frame
 				dfSummary['Tactical_Aircraft_Type'][flight] = df['ac_type'][0]
 				dfSummary['Tactical_Weight_Class'][flight] = df['weight_class'][0]
-				
-
-				# getReadyIndex = True
-				# readyIndex = -1
+			
+				### Create string of all the schedule priority transitions
 				priorityString = df['schedule_priority'][0]
 				lastPriority = df['schedule_priority'][0]
 				
@@ -467,7 +376,7 @@ for flight in range(len(dfSummary['gufi'])):
 						if ('EXEMPT' in df['schedule_priority'][idx0]):
 							dfSummary['Tactical_Exempt_Flight'][flight] = df['schedule_priority'][idx0]
 
-
+				### write to summary data frame
 				dfSummary['Tactical_Schedule_Priroity_String'][flight] = priorityString
 
 				### Create string of all mss transitions
@@ -484,11 +393,26 @@ for flight in range(len(dfSummary['gufi'])):
 				### Get the ready index which is last index before READY, OUT, or TAXI
 				[readyIndex,trackHitOut,returnToGateFlag] = fGetReadyIndex(df)
 
+				
+				### write TRUE/FALSE if the out event was caused by track hit
 				if trackHitOut:
 					dfSummary['Track_Hit_Out_Time'][flight] = 'TRUE'
 				else:
 					dfSummary['Track_Hit_Out_Time'][flight] = 'FALSE'
 
+				
+				### Get timestamps of OFF and OUT for realized taxi time calculations
+				offTimeStamp = pd.Timestamp(dfSummary['departure_runway_actual_time'][flight])
+				outTimeStamp = pd.Timestamp(dfSummary['departure_stand_actual_time'][flight])
+
+				### Calculate realized taxi time 
+				rTaxiTime = offTimeStamp - outTimeStamp
+				realizedTaxiTime = rTaxiTime.total_seconds() / float(60)
+				### save to summary data frame
+				dfSummary['Total_Taxi_Time'][flight] = realizedTaxiTime
+
+
+				### Get model unimpeded taxi time and use this to compute excess taxi time
 				try:
 					if readyIndex != -1:
 						if df['timenow'][readyIndex-1] == dfGate['timenow'][readyIndex-1]:
@@ -544,8 +468,6 @@ for flight in range(len(dfSummary['gufi'])):
 							meterTransitionIn[mss] = str(df['metering_display'][ts-1])
 							meterModeTransitionIn[mss] = str(df['metering_mode'][ts-1])
 							runwayTransitionIn[mss] = str(df['runway'][ts])
-							#if (off_epoch and out_epoch) != False:
-							print(str(pd.Timestamp(df['scheduled_time'][ts]))[0:19])
 							accuracy = pd.Timestamp(str(df['scheduled_time'][ts])[0:19]) - offTimeStamp
 							accuracyTransitionIn[mss] = accuracy.total_seconds()
 							writeInFlag[mss] = 1
@@ -657,11 +579,7 @@ for flight in range(len(dfSummary['gufi'])):
 								try:
 									if dfGate['eta_msg_time'][ts-1] == df['eta_msg_time'][ts-1]:
 										pushTime = dfGate['timenow'][ts]
-										# advisory2 = dfGate['sta'][ts-1] - dfGate['timenow'][ts-1]
-										# gateHold2 = dfGate['sta'][ts-1] - preReadyUOBT
 										totalRealizedHold = pushTime - readyTime
-										# holdBeforeUOBT = preReadyUOBT - readyTime
-										# holdAfterUOBT = pushTime - preReadyUOBT
 										dfSummary['Total_Realized_Hold'][flight] = totalRealizedHold
 										
 										if pushTime < preReadyUOBT:
