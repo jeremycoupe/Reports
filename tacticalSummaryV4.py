@@ -16,7 +16,7 @@ fileName = 'KCLT.flightSummary.v0.3.20171222.09.00-20171223.08.59.20171223.15.15
 inputFileWithDirectory = 'opsSummaryDirectory/originalSummary/' + fileName
 
 ### This is the output file name to save
-outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/testV2NewQuery' + fileName
+outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/tactical_' + fileName
 
 #### Read summary table to get data about flights that you want to 
 #### stitch tactical data too
