@@ -9,7 +9,7 @@ em.init_emission('fuel_and_emission_table.csv')
 advisoryThreshold = 15
 
 ### This is the file name that you want to read in 
-fileName = 'KCLT.flightSummary.v0.3.20171222.09.00-20171223.08.59.20171223.15.15.04.csv'
+fileName = 'KCLT.flightSummary.v0.3.20180103.09.00-20180104.08.59.20180104.15.15.04.csv'
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
 
 ### this will point you to the correct directory that you want to load the file from
@@ -72,6 +72,7 @@ smd.eta_msg_time > TIMESTAMP '%s' AT TIME ZONE 'UTC'
 and smd.eta_msg_time < TIMESTAMP '%s' AT TIME ZONE 'UTC' 
 order by smd.eta_msg_time 
 ''' %(date0,date1)
+
 
 print('THE QUERY HAS STARTED')
 dfALL = psql.read_sql(q, conn)
@@ -417,9 +418,8 @@ for flight in range(len(dfSummary['gufi'])):
 					if readyIndex != -1:
 						if df['timenow'][readyIndex-1] == dfGate['timenow'][readyIndex-1]:
 							modelTaxiTime = (df['eta'][readyIndex-1] - dfGate['eta'][readyIndex-1]) / float(60)
-							dfSummary['Unimpeded_Taxi_Time'][flight] = modelTaxiTime
-							if (off_epoch and out_epoch) != False:
-								dfSummary['Excess_Taxi_Time'][flight] = realizedTaxiTime - modelTaxiTime
+							dfSummary['Unimpeded_Taxi_Time'][flight] = modelTaxiTime							
+							dfSummary['Excess_Taxi_Time'][flight] = realizedTaxiTime - modelTaxiTime
 				except:
 					pass
 
