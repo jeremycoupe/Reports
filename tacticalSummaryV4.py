@@ -141,7 +141,7 @@ def fGetHoldData(dfSummary,mss,df,dfGate,readyIndex,ttotTransitionIn,utotTransit
 	return [ttotTransitionIn,utotTransitionIn,readyTime,preReadyUOBT,advisory,gateHold]
 
 
-def fWriteReady(dfSummary,df,dfGate,readyIndex,off_epoch):
+def fWriteReady(dfSummary,df,dfGate,readyIndex,offTimeStamp,flight):
 	if readyIndex != -1:
 		try:
 			if dfGate['eta_msg_time'][readyIndex] == df['eta_msg_time'][readyIndex]:
@@ -554,7 +554,6 @@ for flight in range(len(dfSummary['gufi'])):
 							meterTransitionOut[mss2] = str(df['metering_display'][ts-1])
 							meterModeTransitionOut[mss2] = str(df['metering_mode'][ts-1])
 							runwayTransitionOut[mss2] = str(df['runway'][ts-1])
-							#if (off_epoch and out_epoch) != False:
 							accuracy = pd.Timestamp(str(df['scheduled_time'][ts-1])[0:19]) - offTimeStamp
 							accuracyTransitionOut[mss2] = accuracy.total_seconds()
 							
