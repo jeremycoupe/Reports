@@ -6,17 +6,17 @@ import mops_emission as em
 em.init_emission('fuel_and_emission_table.csv')
 
 
-advisoryThreshold = 15
+advisoryThreshold = 30
 
 ### This is the file name that you want to read in 
-fileName = 'KCLT.flightSummary.v0.3.20180103.09.00-20180104.08.59.20180104.15.15.04.csv'
+fileName = 'KCLT.flightSummary.v0.3.20180104.09.00-20180105.08.59.20180105.15.15.04.csv'
 #fileName = 'KCLT.flightSummary.20171207.09.00-20171208.08.59.20171208.15.15.04.csv'
 
 ### this will point you to the correct directory that you want to load the file from
 inputFileWithDirectory = 'opsSummaryDirectory/originalSummary/' + fileName
 
 ### This is the output file name to save
-outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/tactical_' + fileName
+outputFileWithDirectory = 'opsSummaryDirectory/tacticalStitched/DEBUGtactical_' + fileName
 
 #### Read summary table to get data about flights that you want to 
 #### stitch tactical data too
@@ -77,6 +77,7 @@ order by smd.eta_msg_time
 print('THE QUERY HAS STARTED')
 dfALL = psql.read_sql(q, conn)
 print('THE QUERY IS DONE')
+
 
 
 def fGetReadyIndex(df):
@@ -142,6 +143,7 @@ def fGetHoldData(dfSummary,mss,df,dfGate,readyIndex,ttotTransitionIn,utotTransit
 
 
 def fWriteReady(dfSummary,df,dfGate,readyIndex,offTimeStamp,flight):
+
 	if readyIndex != -1:
 		try:
 			if dfGate['eta_msg_time'][readyIndex] == df['eta_msg_time'][readyIndex]:
@@ -154,12 +156,20 @@ def fWriteReady(dfSummary,df,dfGate,readyIndex,offTimeStamp,flight):
 					accuracy = pd.Timestamp(str(df['scheduled_time'][readyIndex])[0:19]) - offTimeStamp
 					dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = accuracy.total_seconds()
 				else:
-					advisoryReady = dfGate['sta'][readyIndex+2] - dfGate['timenow'][readyIndex]
-					gateHoldReady = dfGate['sta'][readyIndex+2] - dfGate['timenow'][readyIndex]
-					dfSummary['TTOT_At_Ready'][flight] = str(df['scheduled_time'][readyIndex+2])
-					dfSummary['UTOT_At_Ready'][flight] = str(df['estimated_time'][readyIndex+2])
-					accuracy = pd.Timestamp(str(df['scheduled_time'][readyIndex+2])[0:19]) - offTimeStamp
-					dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = accuracy.total_seconds()
+					if df['model_schedule_state'][readyIndex+2] == 'PUSHBACK_READY':
+						advisoryReady = dfGate['sta'][readyIndex+2] - dfGate['timenow'][readyIndex]
+						gateHoldReady = dfGate['sta'][readyIndex+2] - dfGate['timenow'][readyIndex]
+						dfSummary['TTOT_At_Ready'][flight] = str(df['scheduled_time'][readyIndex+2])
+						dfSummary['UTOT_At_Ready'][flight] = str(df['estimated_time'][readyIndex+2])
+						accuracy = pd.Timestamp(str(df['scheduled_time'][readyIndex+2])[0:19]) - offTimeStamp
+						dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = accuracy.total_seconds()
+					else:
+						advisoryReady = dfGate['sta'][readyIndex] - dfGate['timenow'][readyIndex]
+						gateHoldReady = dfGate['sta'][readyIndex] - dfGate['eta'][readyIndex]
+						dfSummary['TTOT_At_Ready'][flight] = str(df['scheduled_time'][readyIndex])
+						dfSummary['UTOT_At_Ready'][flight] = str(df['estimated_time'][readyIndex])
+						accuracy = pd.Timestamp(str(df['scheduled_time'][readyIndex])[0:19]) - offTimeStamp
+						dfSummary['TTOT_At_Ready_Versus_Actual_Off'][flight] = accuracy.total_seconds()
 
 
 				dfSummary['Total_Gate_Hold_At_Ready'][flight] = advisoryReady
@@ -326,7 +336,7 @@ dfSummary['Excess_Taxi_Time'] = ""
 #### and get data from the tactical scheduler
 
 for flight in range(len(dfSummary['gufi'])):
-#for flight in range(243,248):#range(len(dfSummary['gufi'])):
+#for flight in range(16,18):#range(len(dfSummary['gufi'])):
 #for flight in range(796,806):#range(len(dfSummary['gufi'])):
 
 	if str(dfSummary['isDeparture'][flight]) == str('True'):
@@ -622,7 +632,7 @@ for flight in range(len(dfSummary['gufi'])):
 						dfSummary[str_eta_OUT[mss2]][flight] = etaTransitionOut[mss2]
 
 	
-				dfSummary = fWriteReady(dfSummary,df,dfGate,readyIndex,offTimeStamp)
+				dfSummary = fWriteReady(dfSummary,df,dfGate,readyIndex,offTimeStamp,flight)
 
 
 
