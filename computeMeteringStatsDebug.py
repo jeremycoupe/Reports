@@ -6,7 +6,9 @@ em.init_emission('fuel_and_emission_table.csv')
 
 
 #inputFile = 'opsSummaryDirectory/' + 'tacticalStitchedfuserclt.flightSummary.2017-12-04.09.00.2017-12-05.08.59.20171205.15.15.01.csv'
-inputFile = 'opsSummaryDirectory/' + 'tacticalStitchedKCLT.flightSummary.v0.3.20171220.09.00-20171221.08.59.20171221.15.15.04.csv'
+fileName = 'tactical_KCLT.flightSummary.v0.3.20180103.09.00-20180104.08.59.20180104.15.15.04.csv'
+
+inputFile = 'opsSummaryDirectory/tacticalStitched/' + fileName
 date = inputFile.split('.')[4]
 dateStr = date[0:4] + '-' + date[4:6] + '-' + date[6:8]
 outputFile = 'opsSummaryDirectory/' + 'SummaryMeteringStats.' + str(dateStr) + '.csv'
@@ -52,7 +54,8 @@ for flight in range(len(dfSummary['gufi'])):
 			if dfSummary['Metering_Mode_At_Ready'][flight] == 'TIME_BASED_METERING':
 				if dfSummary['Runway_Assigned_At_Ready'][flight] in meteredRunways:
 					countTotalSubjectSurfaceMetering +=1
-					# print(flight)
+					#print(flight)
+					print(dfSummary['gufi'][flight])
 					# flight_key.append(dfSummary['gufi'][flight])
 					if dfSummary['Track_Hit_Out_Time'][flight] == False:
 						subjectExcessTaxiTime.append(dfSummary['Excess_Taxi_Time'][flight])
@@ -110,8 +113,8 @@ for flight in range(len(dfSummary['gufi'])):
 					#countHoldStats = True
 					#### count statistics for all aircraft held as long as they did not return to gate after the last time put on hold
 					if countHoldStats:
-						print(flight)
-						flight_key.append(dfSummary['gufi'][flight])
+						# print(flight)
+						# flight_key.append(dfSummary['gufi'][flight])
 						
 						#### output some things to the terminal for debug if needed
 						# print(dfSummary['gufi'][flight])
@@ -132,7 +135,10 @@ for flight in range(len(dfSummary['gufi'])):
 						passBackHoldVec_Ready.append(dfSummary['Passback_Hold_When_Put_On_Hold'][flight])
 
 						if dfSummary['Track_Hit_Out_Time'][flight] == False:
-							gateHoldExcessTaxiTime.append(dfSummary['Excess_Taxi_Time'][flight])
+							print('YOU ARE HERE')
+							if str(dfSummary['Excess_Taxi_Time'][flight]) != 'nan':
+								print('YOU ARE HERE')
+								gateHoldExcessTaxiTime.append(dfSummary['Excess_Taxi_Time'][flight])
 
 
 
@@ -162,18 +168,18 @@ dfStats['Median Pass Back Delay When Put on Hold (Minutes)'][0] = np.median(pass
 dfStats['Max Pass Back Delay When Put on Hold (Minutes)'][0] = max(passBackHoldVec_Ready)/float(60)
 
 ### write the output to csv file
-dfStats.to_csv(outputFile,index = False)
+# dfStats.to_csv(outputFile,index = False)
 
 a = np.sort(np.array(flight_key))
 print(a)
 print(len(a))
 print(countTotalSubjectSurfaceMetering)
 
-plt.hist(gateHoldExcessTaxiTime,bins=30,alpha=0.7,label='Gate Hold Excess Taxi Time')
-plt.title( dateStr + ' Excess Taxi Time [Minutes]')
-#plt.hist(gateHoldExcessTaxiTime,bins=30,color = 'green',alpha=0.7,label='Subject To Excess Taxi Time')
-plt.savefig('ExcessTaxiTime.png')
-plt.show()
+# plt.hist(gateHoldExcessTaxiTime,bins=30,alpha=0.7,label='Gate Hold Excess Taxi Time')
+# plt.title( dateStr + ' Excess Taxi Time [Minutes]')
+# #plt.hist(gateHoldExcessTaxiTime,bins=30,color = 'green',alpha=0.7,label='Subject To Excess Taxi Time')
+# plt.savefig('ExcessTaxiTime.png')
+# plt.show()
 
 
 
